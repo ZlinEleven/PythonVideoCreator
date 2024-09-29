@@ -41,8 +41,8 @@ def generate_voiceover(script_file):
         response.stream_to_file("voiceover.mp3")
         print("Voiceover saved to voiceover.mp3")
 
-def generate_subtitles():
-    transcript = aai.Transcriber().transcribe("voiceover.mp3")
+def generate_subtitles(voiceover_file):
+    transcript = aai.Transcriber().transcribe(voiceover_file)
     subtitles = transcript.export_subtitles_srt(
         chars_per_caption=50
     )
@@ -53,13 +53,13 @@ def generate_subtitles():
     f.close()
     print("Subtitles saved to subtitles.srt")
 
-def create_video():
+def create_video(voiceover_file, subtitles_file):
     # Load in voiceover
-    voiceover = AudioFileClip("voiceover.mp3")
+    voiceover = AudioFileClip(voiceover_file)
 
     # Load in subtitles
     subtitles = SubtitlesClip(
-        "subtitles.srt",
+        subtitles_file,
         lambda txt: TextClip(
             txt,
             font="Garamond-bold",
@@ -74,12 +74,12 @@ def create_video():
     # Combine the voiceover and background
     video_with_voiceover = background.set_audio(voiceover)
 
-    final_clip = CompositeVideoClip([video_with_voiceover, subtitles.set_position(("center", "center"))])
+    final_video = CompositeVideoClip([video_with_voiceover, subtitles.set_position(("center", "center"))])
 
-    final_clip.fps = 20
+    final_video.fps = 20
 
     print("Saving final video to final_video.mp4")
-    final_clip.write_videofile("final_video.mp4")
+    final_video.write_videofile("final_video.mp4")
     print("Final video saved to final_video.mp4")
 
 if __name__ == "__main__":
@@ -87,13 +87,13 @@ if __name__ == "__main__":
     topic = input("Step 1: What is the topic of your video? ")
 
     # Generate and save script
-    script = generate_script(topic)
+    generate_script(topic)
 
     # Generate and save voiceover
-    voiceover = generate_voiceover("script.txt")
+    generate_voiceover("script.txt")
 
     # Generate and save subtitles
-    generate_subtitles()
-    
+    generate_subtitles("voiceover.mp3")
+
     # Create video
-    create_video()
+    create_video("voiceover.mp3", "subtitles.srt")
