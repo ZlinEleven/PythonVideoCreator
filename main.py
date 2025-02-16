@@ -1,7 +1,7 @@
 import openai
 import os
 import assemblyai as aai
-from moviepy.editor import *
+from moviepy import *
 from moviepy.video.tools.subtitles import SubtitlesClip
 
 openai.api_key = os.environ['OPENAI_API_KEY']
@@ -58,23 +58,17 @@ def create_video(voiceover_file, subtitles_file):
     voiceover = AudioFileClip(voiceover_file)
 
     # Load in subtitles
-    subtitles = SubtitlesClip(
-        subtitles_file,
-        lambda txt: TextClip(
-            txt,
-            font="Garamond-bold",
-            fontsize=24,
-            color="white",
-        )
-    )
+    # generator = lambda text: TextClip(font=None, text=text,
+    #     font_size=24, color='white')
+    # subtitles = SubtitlesClip(subtitles_file, font='Arial')
 
     # Load in background video
-    background = VideoFileClip("example_background.mp4").subclip(0, voiceover.duration)
+    background = VideoFileClip("example_background.mp4").subclipped(0, voiceover.duration)
 
-    # Combine the voiceover and background
-    video_with_voiceover = background.set_audio(voiceover)
+    # # Combine the voiceover and background
+    final_video = background.with_audio(voiceover)
 
-    final_video = CompositeVideoClip([video_with_voiceover, subtitles.set_position(("center", "center"))])
+    # final_video = CompositeVideoClip([video_with_voiceover, subtitles.set_position(("center", "center"))])
 
     final_video.fps = 20
 
