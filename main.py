@@ -1,28 +1,22 @@
-import openai
-import os
-import assemblyai as aai
+from openai import OpenAI
 from moviepy import *
-from moviepy.video.tools.subtitles import SubtitlesClip
+import assemblyai as aai
 
-openai.api_key = os.environ['OPENAI_API_KEY']
-aai.settings.api_key = os.environ['ASSEMBLYAI_API_KEY']
+
+client = OpenAI()
+# ALTERNATIVE
+# client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
 
 def generate_script(topic):
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a professional motivational speaker. Put together words that inspire action and make people feel empowered to do something beyond their abilities. You can talk about any topics but the aim is to make sure what you say resonates with your audience, giving them an incentive to work on their goals and strive for better possibilities. Avoid fancy words, focus on getting the point across. Provide actionable tips that listeners can apply to improve their lives.",
-            },
-            {
-                "role": "user",
-                "content": f"Write a script for a motivational youtube channel about {topic}."
-            }
-        ]
+    input = "You are a professional motivational speaker. Put together words that inspire action and make people feel empowered to do something beyond their abilities. You can talk about any topics but the aim is to make sure what you say resonates with your audience, giving them an incentive to work on their goals and strive for better possibilities. Avoid fancy words, focus on getting the point across. Provide actionable tips that listeners can apply to improve their lives. Write a 200-word, paragraph-styled script for a motivational youtube channel about " + topic
+    
+    response = client.responses.create(
+        model="gpt-5-nano",
+        input=input
     )
 
-    script = response.choices[0].message.content
+    script = response.output_text
     print("Saving script to script.txt")
     with open("script.txt", "w") as f:
         f.write(script)
@@ -32,8 +26,8 @@ def generate_script(topic):
 def generate_voiceover(script_file):
     input = open(script_file, "r", encoding="utf-8").read()
 
-    with openai.audio.speech.with_streaming_response.create(
-        model="tts-1",
+    with client.audio.speech.with_streaming_response.create(
+        model="gpt-4o-mini-tts",
         voice="onyx",
         input=input,
     ) as response:
@@ -41,19 +35,19 @@ def generate_voiceover(script_file):
         response.stream_to_file("voiceover.mp3")
         print("Voiceover saved to voiceover.mp3")
 
-def generate_subtitles(voiceover_file):
-    transcript = aai.Transcriber().transcribe(voiceover_file)
-    subtitles = transcript.export_subtitles_srt(
-        chars_per_caption=50
-    )
+# def generate_subtitles(voiceover_file):
+#     transcript = aai.Transcriber().transcribe(voiceover_file)
+#     subtitles = transcript.export_subtitles_srt(
+#         chars_per_caption=50
+#     )
 
-    print("Saving subtitles to subtitles.srt")
-    with open("subtitles.srt", "w") as f:
-        f.write(subtitles)
-    f.close()
-    print("Subtitles saved to subtitles.srt")
+#     print("Saving subtitles to subtitles.srt")
+#     with open("subtitles.srt", "w") as f:
+#         f.write(subtitles)
+#     f.close()
+#     print("Subtitles saved to subtitles.srt")
 
-def create_video(voiceover_file, subtitles_file):
+def create_video(voiceover_file):
     # Load in voiceover
     voiceover = AudioFileClip(voiceover_file)
 
@@ -63,9 +57,10 @@ def create_video(voiceover_file, subtitles_file):
     # subtitles = SubtitlesClip(subtitles_file, font='Arial')
 
     # Load in background video
-    background = VideoFileClip("example_background.mp4").subclipped(0, voiceover.duration)
+    background = VideoFileClip("example_background.mp4")
+    background = background.subclipped(0, voiceover.duration)
 
-    # # Combine the voiceover and background
+    # Combine the voiceover and background
     final_video = background.with_audio(voiceover)
 
     # final_video = CompositeVideoClip([video_with_voiceover, subtitles.set_position(("center", "center"))])
@@ -78,6 +73,7 @@ def create_video(voiceover_file, subtitles_file):
 
 if __name__ == "__main__":
     print("Hello, welcome to Python video creator!")
+
     topic = input("Step 1: What is the topic of your video? ")
 
     # Generate and save script
@@ -86,8 +82,5 @@ if __name__ == "__main__":
     # Generate and save voiceover
     generate_voiceover("script.txt")
 
-    # Generate and save subtitles
-    generate_subtitles("voiceover.mp3")
-
     # Create video
-    create_video("voiceover.mp3", "subtitles.srt")
+    create_video("voiceover.mp3")
