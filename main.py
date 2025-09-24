@@ -1,6 +1,6 @@
 from openai import OpenAI
 from moviepy import *
-import assemblyai as aai
+# import assemblyai as aai
 
 
 client = OpenAI()
